@@ -70,12 +70,36 @@ function run() {
           const title = ui.prompt("Título do livro: ");
           service.returnBook(userId, title);
           console.log("Devolução realizada.");
+          console.log(
+            `Empréstimo: ${ultima.borrowedAt.toLocaleDateString("pt-BR")} | ` +
+              `Devolução: ${ultima.returnedAt.toLocaleDateString("pt-BR")} | ` +
+              `Dias: ${ultima.days}`
+          );
           break;
         }
         case "8": {
           const userId = ui.prompt("ID do usuário: ");
-          const loans = service.listLoans(userId);
-          console.log(`Empréstimos de ${userId}: ${loans.join(", ") || "(nenhum)"}`);
+          const loans = service.listLoansWithDates(userId);
+          if (loans.length === 0) {
+            console.log(`Empréstimos de ${userId}: (nenhum)`);
+            break;
+          }
+          console.log(`Empréstimos de ${userId}:`);
+          loans.forEach((l) => {
+            console.log(`${l.title} - emprestado em ${l.borrowedAt.toLocaleDateString("pt-BR")}`);
+          });
+          break;
+        }
+        case "9": {
+          const term = ui.prompt("Termo de busca: ");
+          const found = service.searchBooks(term);
+          if (found.length === 0) {
+            console.log("Nenhum resultado encontrado");
+            break;
+          }
+          found.forEach((b) => {
+            console.log(`${b.title} - ${b.author} | Disponível: ${b.quantity}`);
+          });
           break;
         }
         case "0":

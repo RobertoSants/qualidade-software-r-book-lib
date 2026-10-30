@@ -2,6 +2,8 @@
 import { Book } from "../models/book.js";
 import { User } from "../models/user.js";
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 export class LibraryService {
   constructor(repository) {
     this.repo = repository;
@@ -65,7 +67,7 @@ export class LibraryService {
   }
 
   // --- Operações de empréstimo (RN04, RN05 & RN08) ---
-  borrowBook(userId, title) {
+  borrowBook(userId, title, date = new Date()) {
     const user = this.repo.findUser(userId);
     if (!user) throw new Error("Usuário não encontrado");
 
@@ -83,11 +85,11 @@ export class LibraryService {
     }
 
     book.quantity -= 1;
-    user.borrow(book.title);
+    user.borrow(book.title, date);
     return true;
   }
 
-  returnBook(userId, title) {
+  returnBook(userId, title, date = new Date()) {
     const user = this.repo.findUser(userId);
     if (!user) throw new Error("Usuário não encontrado");
 
@@ -102,10 +104,56 @@ export class LibraryService {
       throw new Error("Quantidade máxima atingida");
     }
 
+    const borrowedAt = user.getLoanDate(book.title);
+    if (date < borrowedAt) {
+      throw new Error("Data de devolução inválida")
+    }
+
     // devolução
     book.quantity += 1;
     user.return(book.title);
+    user.addReturnRecord({
+      title: book.title,
+      borrowedAt,
+      returnedAt: date,
+      days: Math.floor((date - borrowedAt) / MS_PER_DAY),
+    });
     return true;
+  }
+
+  getLoanDate(userId, title) {
+    const user = this.repo.findUser(userId);
+    if (!user) throw new Error("Usuário não encontrado");
+
+    const book = this.repo.findBook(title);
+    if (!book) throw new Error("Livro não encontrado");
+
+    if (!user.hasBorrowed(book.title)) {
+      throw new Error("Usuário não emprestou este livro");
+    }
+    return user.getLoanDate(book.title);
+  }
+
+  listLoansWithDates(userId) {
+    const user = this.repo.findUser(userId);
+    if (!user) throw new Error("Usuário não encontrado");
+    return user
+      .listLoans()
+      .map((title) => ({ title, borrowedAt: user.getLoanDate(title) }));
+  }
+
+  listReturns(userId) {
+    const user = this.repo.findUser(userId);
+    if (!user) throw new Error("Usuário não encontrado");
+    return user.listReturns();
+  }
+
+    searchBooks(term) {
+    if (typeof term !== "string" || term.trim() === "") return [];
+    const t = term.trim().toLowerCase();
+    return this.repo
+      .listBooks()
+      .filter((b) => b.title.toLowerCase().includes(t) || b.author.toLowerCase().includes(t));
   }
 
   listLoans(userId) {

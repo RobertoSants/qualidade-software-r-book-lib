@@ -13,6 +13,7 @@ export function showMenu() {
   console.log("6. Emprestar livro");
   console.log("7. Devolver livro");
   console.log("8. Listar empréstimos de usuário");
+   console.log("9. Buscar livros");
   console.log("0. Sair");
   return prompt("Escolha uma opção: ");
 }

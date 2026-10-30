@@ -6,18 +6,37 @@ export class User {
     this.name = name || "";
     // loans é um Set com os títulos emprestados
     this.loans = new Set();
+    this.loanDates = new Map();
+    this.returns = [];
   }
 
-  borrow(title) {
+  borrow(title, date = new Date()) {
     this.loans.add(title);
+    this.loanDates.set(title, date);
   }
+
+  getLoanDate(title) {
+    return this.loanDates.get(title);
+  }
+
 
   hasBorrowed(title) {
     return this.loans.has(title);
   }
 
   return(title) {
+    const borrowedAt = this.loanDates.get(title);
     this.loans.delete(title);
+    this.loanDates.delete(title);
+    return borrowedAt;
+  }
+
+  addReturnRecord(record) {
+    this.returns.push(record);
+  }
+
+  listReturns() {
+    return this.returns.slice();
   }
 
   loanCount() {
